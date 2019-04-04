@@ -14,6 +14,18 @@ final class SweepTests: XCTestCase {
         XCTAssertEqual(matches, ["Scanned"])
     }
 
+    func testMatchingStartOfString() {
+        let string = "<Scanned> Some text."
+        let matches = string.substrings(between: "<", and: ">")
+        XCTAssertEqual(matches, ["Scanned"])
+    }
+
+    func testMatchingEndOfString() {
+        let string = "Some text <Scanned>"
+        let matches = string.substrings(between: "<", and: ">")
+        XCTAssertEqual(matches, ["Scanned"])
+    }
+
     func testMatchingMultipleSegments() {
         let string = "Some text <First> some other text <Second>."
         let matches = string.substrings(between: "<", and: ">")
@@ -56,6 +68,36 @@ final class SweepTests: XCTestCase {
         XCTAssertEqual(matches, [])
     }
 
+    func testHTMLScanning() {
+        let html = "<p>Hello, <b>this text should be bold</b>, right?</p>"
+
+        let tags = html.substrings(between: "<", and: ">")
+        XCTAssertEqual(tags, ["p", "b", "/b", "/p"])
+
+        let boldText = html.substrings(between: "<b>", and: "</b>")
+        XCTAssertEqual(boldText, ["this text should be bold"])
+    }
+
+    func testMarkdownScanning() {
+        let markdown = """
+        # Title
+
+        Text
+
+        ## Section 1
+
+        More text
+
+        ## Section 2
+        """
+
+        let h1s = markdown.substrings(between: [.prefix("# "), "\n# "], and: [.end, "\n"])
+        XCTAssertEqual(h1s, ["Title"])
+
+        let h2s = markdown.substrings(between: [.prefix("## "), "\n## "], and: [.end, "\n"])
+        XCTAssertEqual(h2s, ["Section 1", "Section 2"])
+    }
+
     func testMultipleMatchers() {
         let string = "Some text <First> some other text [Second]."
         var matches = (
@@ -85,6 +127,8 @@ extension SweepTests: LinuxTestable {
     static var allTests: [(String, (SweepTests) -> () throws -> Void)] {
         return [
             ("testBasicScanning", testBasicScanning),
+            ("testMatchingStartOfString", testMatchingStartOfString),
+            ("testMatchingEndOfString", testMatchingEndOfString),
             ("testMatchingMultipleSegments", testMatchingMultipleSegments),
             ("testMatchingBackToBackSegments", testMatchingBackToBackSegments),
             ("testMultipleIdentifiersAndTerminators", testMultipleIdentifiersAndTerminators),
@@ -92,6 +136,8 @@ extension SweepTests: LinuxTestable {
             ("testMultipleNestedIdentifiers", testMultipleNestedIdentifiers),
             ("testIgnoringUnterminatedMatch", testIgnoringUnterminatedMatch),
             ("testIgnoringEmptyMatch", testIgnoringEmptyMatch),
+            ("testHTMLScanning", testHTMLScanning),
+            ("testMarkdownScanning", testMarkdownScanning),
             ("testMultipleMatchers", testMultipleMatchers)
         ]
     }

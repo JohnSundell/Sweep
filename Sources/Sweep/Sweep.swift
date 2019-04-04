@@ -6,18 +6,83 @@
 
 import Foundation
 
+/// Type used to define an identifier to scan for within a string.
+/// An identifier can also be defined using a string literal.
+public struct Identifier {
+    /// The string to scan for within a string.
+    fileprivate let string: String
+    /// Whether or not the identifier is required to be located
+    /// right at the start of the scanned string.
+    fileprivate let isPrefix: Bool
+}
+
+public extension Identifier {
+    /// Match the very start of a string.
+    static var start: Identifier {
+        return .prefix("")
+    }
+
+    /// Match a starting prefix of a string.
+    static func prefix(_ string: String) -> Identifier {
+        return Identifier(string: string, isPrefix: true)
+    }
+
+    /// Match against a string located anywhere within the scanned string.
+    static func anyString(_ string: String) -> Identifier {
+        return Identifier(string: string, isPrefix: false)
+    }
+}
+
+extension Identifier: ExpressibleByStringLiteral {
+    /// Initialize an Identifier using a string literal.
+    public init(stringLiteral value: String) {
+        self.init(string: value, isPrefix: false)
+    }
+}
+
+/// Type used to define a terminator that ends a matching session.
+/// A terminator can also be defined using a string literal.
+public struct Terminator {
+    fileprivate let string: String
+    fileprivate let isSuffix: Bool
+}
+
+public extension Terminator {
+    /// Match the very end of a string.
+    static var end: Terminator {
+        return .suffix("")
+    }
+
+    /// Match an ending prefix of a string.
+    static func suffix(_ string: String) -> Terminator {
+        return Terminator(string: string, isSuffix: true)
+    }
+
+    /// Match against a string located anywhere within the scanned string.
+    static func anyString(_ string: String) -> Terminator {
+        return Terminator(string: string, isSuffix: false)
+    }
+}
+
+extension Terminator: ExpressibleByStringLiteral {
+    /// Initialize a Terminator using a string literal.
+    public init(stringLiteral value: String) {
+        self.init(string: value, isSuffix: false)
+    }
+}
+
 /// Type used to define a custom string scanning matcher,
 /// which gets all substrings that appear between a set of
 /// identifiers and terminators passed to its handler.
 public struct Matcher {
-    /// The identifiers to look for when scanning. When either
+    /// The identifiers to look for when scanning. When any
     /// of the identifiers are found, a matching session begins.
-    public var identifiers: Set<String>
+    public var identifiers: [Identifier]
     /// The terminators that end a matching session, causing the
     /// substring between any of the found terminators and the
     /// identifier that started the session to be passed to the
     /// matcher's handler.
-    public var terminators: Set<String>
+    public var terminators: [Terminator]
     /// The handler to be called when a match was found. A match
     /// is considered found when a substring appears between any
     /// of the matcher's identifiers and its terminators.
@@ -25,8 +90,8 @@ public struct Matcher {
 
     /// Create a new matcher with the desired parameters. See
     /// the documentation for each property for more information.
-    public init(identifiers: Set<String>,
-                terminators: Set<String>,
+    public init(identifiers: [Identifier],
+                terminators: [Terminator],
                 handler: @escaping (Substring) -> Void) {
         self.identifiers = identifiers
         self.terminators = terminators
@@ -36,9 +101,9 @@ public struct Matcher {
 
 public extension Matcher {
     /// Convenience API to initialize a matcher with a single
-    /// identifier and matcher, rather than sets of them.
-    init(identifier: String,
-         terminator: String,
+    /// identifier and terminator, rather than arrays of them.
+    init(identifier: Identifier,
+         terminator: Terminator,
          handler: @escaping (Substring) -> Void) {
         self.init(identifiers: [identifier],
                   terminators: [terminator],
@@ -49,15 +114,16 @@ public extension Matcher {
 public extension StringProtocol where SubSequence == Substring {
     /// Scan this string for substrings appearing between a single
     /// identifier and terminator, and return all matches.
-    func substrings(between identifier: String,
-                    and terminator: String) -> [Substring] {
-        return substrings(between: [identifier], and: [terminator])
+    func substrings(between identifier: Identifier,
+                    and terminator: Terminator) -> [Substring] {
+        return substrings(between: [identifier],
+                          and: [terminator])
     }
 
     /// Scan this string for substrings appearing between a set of
     /// identifiers and terminators, and return all matches.
-    func substrings(between identifiers: Set<String>,
-                    and terminators: Set<String>) -> [Substring] {
+    func substrings(between identifiers: [Identifier],
+                    and terminators: [Terminator]) -> [Substring] {
         var matches = [Substring]()
 
         scan(using: [Matcher(
@@ -85,17 +151,26 @@ public extension StringProtocol where SubSequence == Substring {
                 let match = self[range]
 
                 for terminator in matcher.terminators {
-                    guard !match.hasSuffix(terminator) else {
-                        let endIndex = self.index(range.upperBound, offsetBy: -terminator.count)
-
-                        if endIndex > range.lowerBound {
-                            let range = range.lowerBound...endIndex
-                            matcher.handler(self[range])
-                        }
-
-                        idleMatchers.append(matcher)
-                        return nil
+                    guard match.hasSuffix(terminator.string) else {
+                        continue
                     }
+
+                    if terminator.isSuffix {
+                        guard self.index(after: index) == endIndex else {
+                            continue
+                        }
+                    }
+
+                    let endIndex = self.index(range.upperBound,
+                                              offsetBy: -terminator.string.count)
+
+                    if endIndex >= range.lowerBound {
+                        let range = range.lowerBound...endIndex
+                        matcher.handler(self[range])
+                    }
+
+                    idleMatchers.append(matcher)
+                    return nil
                 }
 
                 return (matcher, range)
@@ -107,11 +182,11 @@ public extension StringProtocol where SubSequence == Substring {
                 let match = self[range]
 
                 for identifier in matcher.identifiers {
-                    guard identifier.hasPrefix(match) else {
+                    guard identifier.string.hasPrefix(match) else {
                         continue
                     }
 
-                    guard identifier == match else {
+                    guard identifier.string == match else {
                         return (matcher, range)
                     }
 
@@ -127,8 +202,14 @@ public extension StringProtocol where SubSequence == Substring {
 
             idleMatchers = idleMatchers.filter { matcher in
                 for identifier in matcher.identifiers {
-                    if identifier.first == self[index] {
-                        if identifier.count == 1 {
+                    if identifier.isPrefix {
+                        guard index == startIndex else {
+                            continue
+                        }
+                    }
+
+                    if identifier.string.first == self[index] {
+                        if identifier.string.count == 1 {
                             let nextIndex = self.index(after: index)
                             activeSessions.append((matcher, nextIndex...nextIndex))
                         } else {
