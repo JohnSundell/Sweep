@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="Logo.png” width="500" max-width="90%" alt="Sweep" />
+    <img src="Logo.png" width="500" max-width="90%" alt="Sweep" />
 </p>
 <p align="center">
     <img src="https://img.shields.io/badge/Swift-5.0-orange.svg" />
