@@ -80,6 +80,12 @@ extension Terminator: ExpressibleByStringLiteral {
 /// which gets all substrings that appear between a set of
 /// identifiers and terminators passed to its handler.
 public struct Matcher {
+    /// Closure type used to define a handler for a matcher. When
+    /// a match is found, the handler is passed the substring that
+    /// was matched, as well as the range containing the match plus
+    /// the identifier and terminator that the match is located between.
+    public typealias Handler = (Substring, ClosedRange<String.Index>) -> Void
+
     /// The identifiers to look for when scanning. When any
     /// of the identifiers are found, a matching session begins.
     public var identifiers: [Identifier]
@@ -91,13 +97,13 @@ public struct Matcher {
     /// The handler to be called when a match was found. A match
     /// is considered found when a substring appears between any
     /// of the matcher's identifiers and its terminators.
-    public var handler: (Substring) -> Void
+    public var handler: Handler
 
     /// Create a new matcher with the desired parameters. See
     /// the documentation for each property for more information.
     public init(identifiers: [Identifier],
                 terminators: [Terminator],
-                handler: @escaping (Substring) -> Void) {
+                handler: @escaping Handler) {
         self.identifiers = identifiers
         self.terminators = terminators
         self.handler = handler
@@ -109,7 +115,7 @@ public extension Matcher {
     /// identifier and terminator, rather than arrays of them.
     init(identifier: Identifier,
          terminator: Terminator,
-         handler: @escaping (Substring) -> Void) {
+         handler: @escaping Handler) {
         self.init(identifiers: [identifier],
                   terminators: [terminator],
                   handler: handler)
@@ -134,7 +140,9 @@ public extension StringProtocol where SubSequence == Substring {
         scan(using: [Matcher(
             identifiers: identifiers,
             terminators: terminators,
-            handler: { matches.append($0) }
+            handler: { match, _ in
+                matches.append(match)
+            }
         )])
 
         return matches
@@ -143,16 +151,13 @@ public extension StringProtocol where SubSequence == Substring {
     /// Scan this string using a custom array of matchers, defined using
     /// the `Matcher` type, which gets to handle all matched substrings.
     func scan(using matchers: [Matcher]) {
-        typealias Session = (matcher: Matcher, range: ClosedRange<Index>)
-
-        var activeSessions = [Session]()
-        var partialSessions = [Session]()
+        var activeSessions = [(Matcher, Identifier, ClosedRange<Index>)]()
+        var partialSessions = [(Matcher, ClosedRange<Index>)]()
         var idleMatchers = matchers
 
         for index in indices {
-            activeSessions = activeSessions.compactMap {
-                let matcher = $0.matcher
-                let range = $0.range.lowerBound...index
+            activeSessions = activeSessions.compactMap { matcher, identifier, range in
+                let range = range.lowerBound...index
                 let match = self[range]
 
                 for terminator in matcher.terminators {
@@ -170,20 +175,21 @@ public extension StringProtocol where SubSequence == Substring {
                                               offsetBy: -terminator.string.count)
 
                     if endIndex >= range.lowerBound {
-                        let range = range.lowerBound...endIndex
-                        matcher.handler(self[range])
+                        let match = self[range.lowerBound...endIndex]
+                        let identifierLength = identifier.string.count
+                        let lowerBound = self.index(range.lowerBound, offsetBy: -identifierLength)
+                        matcher.handler(match, lowerBound...range.upperBound)
                     }
 
                     idleMatchers.append(matcher)
                     return nil
                 }
 
-                return (matcher, range)
+                return (matcher, identifier, range)
             }
 
-            partialSessions = partialSessions.compactMap {
-                let matcher = $0.matcher
-                let range = $0.range.lowerBound...index
+            partialSessions = partialSessions.compactMap { matcher, range in
+                let range = range.lowerBound...index
                 let match = self[range]
 
                 for identifier in matcher.identifiers {
@@ -197,7 +203,7 @@ public extension StringProtocol where SubSequence == Substring {
 
                     let nextIndex = self.index(after: index)
                     let range = nextIndex...nextIndex
-                    activeSessions.append((matcher, range))
+                    activeSessions.append((matcher, identifier, range))
                     return nil
                 }
 
@@ -216,7 +222,8 @@ public extension StringProtocol where SubSequence == Substring {
                     if identifier.string.first == self[index] {
                         if identifier.string.count == 1 {
                             let nextIndex = self.index(after: index)
-                            activeSessions.append((matcher, nextIndex...nextIndex))
+                            let range = nextIndex...nextIndex
+                            activeSessions.append((matcher, identifier, range))
                         } else {
                             partialSessions.append((matcher, index...index))
                         }
