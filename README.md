@@ -77,13 +77,13 @@ var urls = [URL]()
 var titles = [String]()
 
 text.scan(using: [
-    Matcher(identifiers: ["url: "], terminators: ["\n", .end]) {
-        let string = String($0)
+    Matcher(identifiers: ["url: "], terminators: ["\n", .end]) { match, range in
+        let string = String(match)
         let url = URL(string: string)
         url.flatMap { urls.append($0) }
     },
-    Matcher(identifiers: ["title: "], terminators: ["\n", .end]) {
-        let string = String($0)
+    Matcher(identifiers: ["title: "], terminators: ["\n", .end]) { match, range in
+        let string = String(match)
         titles.append(string)
     }
 ])

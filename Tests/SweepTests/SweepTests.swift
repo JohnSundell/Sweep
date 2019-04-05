@@ -99,23 +99,25 @@ final class SweepTests: XCTestCase {
     }
 
     func testMultipleMatchers() {
-        let string = "Some text <First> some other text [Second]."
-        var matches = (
-            a: [Substring](),
-            b: [Substring]()
-        )
+        let string = "Some text <First> some other text [[Second]]."
+        var matches = (a: [Substring](), b: [Substring]())
+        var ranges = (a: [ClosedRange<String.Index>](), b: [ClosedRange<String.Index>]())
 
         string.scan(using: [
-            Matcher(identifier: "<", terminator: ">") {
-                matches.a.append($0)
+            Matcher(identifier: "<", terminator: ">") { match, range in
+                matches.a.append(match)
+                ranges.a.append(range)
             },
-            Matcher(identifier: "[", terminator: "]") {
-                matches.b.append($0)
+            Matcher(identifier: "[[", terminator: "]]") { match, range in
+                matches.b.append(match)
+                ranges.b.append(range)
             }
         ])
 
         XCTAssertEqual(matches.a, ["First"])
+        XCTAssertEqual(ranges.a.map { string[$0] }, ["<First>"])
         XCTAssertEqual(matches.b, ["Second"])
+        XCTAssertEqual(ranges.b.map { string[$0] }, ["[[Second]]"])
     }
 
     func testAllTestsRunOnLinux() {
