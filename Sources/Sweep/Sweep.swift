@@ -8,12 +8,13 @@ import Foundation
 
 /// Type used to define an identifier to scan for within a string.
 /// An identifier can also be defined using a string literal.
+/// Create a value using either .start, .prefix, or .anyString.
 public struct Identifier {
     /// The string to scan for within a string.
-    fileprivate let string: String
+    public var string: String
     /// Whether or not the identifier is required to be located
     /// right at the start of the scanned string.
-    fileprivate let isPrefix: Bool
+    public var isPrefix: Bool
 }
 
 public extension Identifier {
@@ -42,9 +43,13 @@ extension Identifier: ExpressibleByStringLiteral {
 
 /// Type used to define a terminator that ends a matching session.
 /// A terminator can also be defined using a string literal.
+/// Create a value using either .end, .suffix, or .anyString.
 public struct Terminator {
-    fileprivate let string: String
-    fileprivate let isSuffix: Bool
+    /// The string to use as a terminator when scanning a string.
+    public var string: String
+    /// Whether or not the terminator is required to be located
+    /// right at the end of the scanned string.
+    public var isSuffix: Bool
 }
 
 public extension Terminator {
