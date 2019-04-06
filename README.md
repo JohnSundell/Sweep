@@ -18,7 +18,7 @@ Sweep can be dropped into a project as a general-purpose string scanning algorit
 
 ## Examples
 
-The easiest way to start using Sweep is to call the `subtrings` method that it adds on top of `StringProtocol` — meaning that you can use it on both “normal” strings and `Substring` values.
+The easiest way to start using Sweep is to call the `substrings` method that it adds on top of `StringProtocol` — meaning that you can use it on both “normal” strings and `Substring` values.
 
 Here’s an example in which we scan a string for HTML tags, and both identify the names of all tags that appear in the string, and also any text that should be rendered in bold:
 
