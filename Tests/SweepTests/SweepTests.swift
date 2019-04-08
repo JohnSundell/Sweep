@@ -143,6 +143,7 @@ extension SweepTests: LinuxTestable {
             ("testMultipleNestedIdentifiers", testMultipleNestedIdentifiers),
             ("testIgnoringUnterminatedMatch", testIgnoringUnterminatedMatch),
             ("testIgnoringEmptyMatch", testIgnoringEmptyMatch),
+            ("testConvenienceAPICandidate", testConvenienceAPICandidate),
             ("testHTMLScanning", testHTMLScanning),
             ("testMarkdownScanning", testMarkdownScanning),
             ("testMultipleMatchers", testMultipleMatchers)
