@@ -237,3 +237,14 @@ public extension StringProtocol where SubSequence == Substring {
         }
     }
 }
+
+public extension StringProtocol where SubSequence == Substring {
+    /// Convenience API candidate
+    func components(separatedBy separator: String, between lower: String, and upper: String) -> [String] {
+        let lowerBound = Identifier(stringLiteral: lower)
+        let upperBound = Terminator(stringLiteral: upper)
+        let tagStrings = substrings(between: lowerBound, and: upperBound)
+        return tagStrings.flatMap { $0.components(separatedBy: separator) }
+    }
+}
+
