@@ -57,9 +57,7 @@ Since Sweep was designed to fit right in alongside Swift’s built-in string API
 ```swift
 import Sweep
 
-let text = "{{tags: swift, programming, xcode}}"
-let tagStrings = text.substrings(between: "{{tags: ", and: "}}")
-let tags = tagStrings.flatMap { $0.components(separatedBy: ", ") }
+let tags = "{{tags: swift, programming, xcode}}".components(separatedBy: ", ", between: "{{tags: ", and: "}}")
 print(tags) // ["swift", "programming", "xcode"]
 ```
 
