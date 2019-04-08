@@ -68,6 +68,11 @@ final class SweepTests: XCTestCase {
         XCTAssertEqual(matches, [])
     }
 
+    func testConvenienceAPICandidate() {
+        let tags = "{{tags: swift, programming, xcode}}".components(separatedBy: ", ", between: "{{tags: ", and: "}}")
+        XCTAssertEqual(tags, ["swift", "programming", "xcode"])
+    }
+
     func testHTMLScanning() {
         let html = "<p>Hello, <b>this text should be bold</b>, right?</p>"
 
