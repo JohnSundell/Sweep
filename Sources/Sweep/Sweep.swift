@@ -217,6 +217,12 @@ public extension StringProtocol where SubSequence == Substring {
                         guard index == startIndex else {
                             continue
                         }
+
+                        guard !identifier.string.isEmpty else {
+                            let range = index...index
+                            activeSessions.append((matcher, identifier, range))
+                            return false
+                        }
                     }
 
                     if identifier.string.first == self[index] {
