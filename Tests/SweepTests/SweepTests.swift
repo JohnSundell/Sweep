@@ -20,10 +20,22 @@ final class SweepTests: XCTestCase {
         XCTAssertEqual(matches, ["Scanned"])
     }
 
+    func testMatchingStartOfStringWithStartIdentifier() {
+        let string = "<Scanned> Some text."
+        let matches = string.substrings(between: .start, and: ">")
+        XCTAssertEqual(matches, ["<Scanned"])
+    }
+
     func testMatchingEndOfString() {
         let string = "Some text <Scanned>"
         let matches = string.substrings(between: "<", and: ">")
         XCTAssertEqual(matches, ["Scanned"])
+    }
+
+    func testMatchingEndOfStringWithEndTerminator() {
+        let string = "Some text <Scanned>"
+        let matches = string.substrings(between: "<", and: .end)
+        XCTAssertEqual(matches, ["Scanned>"])
     }
 
     func testMatchingMultipleSegments() {
@@ -130,7 +142,9 @@ extension SweepTests: LinuxTestable {
         return [
             ("testBasicScanning", testBasicScanning),
             ("testMatchingStartOfString", testMatchingStartOfString),
+            ("testMatchingStartOfStringWithStartIdentifier", testMatchingStartOfStringWithStartIdentifier),
             ("testMatchingEndOfString", testMatchingEndOfString),
+            ("testMatchingEndOfStringWithEndTerminator", testMatchingEndOfStringWithEndTerminator),
             ("testMatchingMultipleSegments", testMatchingMultipleSegments),
             ("testMatchingBackToBackSegments", testMatchingBackToBackSegments),
             ("testMultipleIdentifiersAndTerminators", testMultipleIdentifiersAndTerminators),
