@@ -94,6 +94,9 @@ public struct Matcher {
     /// identifier that started the session to be passed to the
     /// matcher's handler.
     public var terminators: [Terminator]
+    /// Whether this matcher should be allowed to handle multiple
+    /// matches, or if it's single-use only. Default value: true.
+    public var allowMultipleMatches: Bool
     /// The handler to be called when a match was found. A match
     /// is considered found when a substring appears between any
     /// of the matcher's identifiers and its terminators.
@@ -103,9 +106,11 @@ public struct Matcher {
     /// the documentation for each property for more information.
     public init(identifiers: [Identifier],
                 terminators: [Terminator],
+                allowMultipleMatches: Bool = true,
                 handler: @escaping Handler) {
         self.identifiers = identifiers
         self.terminators = terminators
+        self.allowMultipleMatches = allowMultipleMatches
         self.handler = handler
     }
 }
@@ -115,9 +120,11 @@ public extension Matcher {
     /// identifier and terminator, rather than arrays of them.
     init(identifier: Identifier,
          terminator: Terminator,
+         allowMultipleMatches: Bool = true,
          handler: @escaping Handler) {
         self.init(identifiers: [identifier],
                   terminators: [terminator],
+                  allowMultipleMatches: allowMultipleMatches,
                   handler: handler)
     }
 }
@@ -156,6 +163,16 @@ public extension StringProtocol where SubSequence == Substring {
         var idleMatchers = matchers
 
         for index in indices {
+            let noSessionsRemain = (
+                activeSessions.isEmpty &&
+                partialSessions.isEmpty &&
+                idleMatchers.isEmpty
+            )
+
+            guard !noSessionsRemain else {
+                return
+            }
+
             activeSessions = activeSessions.compactMap { matcher, identifier, range in
                 let range = range.lowerBound...index
                 let match = self[range]
@@ -179,6 +196,10 @@ public extension StringProtocol where SubSequence == Substring {
                         let identifierLength = identifier.string.count
                         let lowerBound = self.index(range.lowerBound, offsetBy: -identifierLength)
                         matcher.handler(match, lowerBound...range.upperBound)
+
+                        guard matcher.allowMultipleMatches else {
+                            return nil
+                        }
                     }
 
                     idleMatchers.append(matcher)
