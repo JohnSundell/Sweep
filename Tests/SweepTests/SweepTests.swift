@@ -132,6 +132,24 @@ final class SweepTests: XCTestCase {
         XCTAssertEqual(ranges.b.map { string[$0] }, ["[[Second]]"])
     }
 
+    func testDisallowingMultipleMatches() {
+        let string = "Some text <First> some other text <Second>, <Third>."
+        var matches = [Substring]()
+
+        string.scan(using: [
+            Matcher(
+                identifier: "<",
+                terminator: ">",
+                allowMultipleMatches: false,
+                handler: { match, _ in
+                    matches.append(match)
+                }
+            )
+        ])
+
+        XCTAssertEqual(matches, ["First"])
+    }
+
     func testAllTestsRunOnLinux() {
         verifyAllTestsRunOnLinux()
     }
@@ -154,7 +172,8 @@ extension SweepTests: LinuxTestable {
             ("testIgnoringEmptyMatch", testIgnoringEmptyMatch),
             ("testHTMLScanning", testHTMLScanning),
             ("testMarkdownScanning", testMarkdownScanning),
-            ("testMultipleMatchers", testMultipleMatchers)
+            ("testMultipleMatchers", testMultipleMatchers),
+            ("testDisallowingMultipleMatches", testDisallowingMultipleMatches)
         ]
     }
 }
