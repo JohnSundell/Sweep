@@ -130,6 +130,34 @@ public extension Matcher {
 }
 
 public extension StringProtocol where SubSequence == Substring {
+    /// Scan this string for a single substring that appears between
+    /// a single identifier and terminator, and return any found match.
+    func firstSubstring(between identifier: Identifier,
+                        and terminator: Terminator) -> Substring? {
+        return firstSubstring(between: [identifier],
+                              and: [terminator])
+    }
+
+    /// Scan this string for a single substring that appears between
+    /// a set of identifiers and terminators, and return any found match.
+    func firstSubstring(between identifiers: [Identifier],
+                        and terminators: [Terminator]) -> Substring? {
+        var match: Substring?
+
+        scan(using: [
+            Matcher(
+                identifiers: identifiers,
+                terminators: terminators,
+                allowMultipleMatches: false,
+                handler: { substring, _ in
+                    match = substring
+                }
+            )
+        ])
+
+        return match
+    }
+
     /// Scan this string for substrings appearing between a single
     /// identifier and terminator, and return all matches.
     func substrings(between identifier: Identifier,

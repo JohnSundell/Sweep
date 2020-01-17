@@ -150,6 +150,18 @@ final class SweepTests: XCTestCase {
         XCTAssertEqual(matches, ["First"])
     }
 
+    func testScanningForSingleSubstring() {
+        let string = "Some text <First> some other text <Second>, <Third>."
+        let match = string.firstSubstring(between: "<", and: ">")
+        XCTAssertEqual(match, "First")
+    }
+
+    func testScanningForSingleSubstringWithMultipleIdentifiers() {
+        let string = "Some text <First> some other text [Second], <Third>."
+        let match = string.firstSubstring(between: ["<", "["], and: [">", "]"])
+        XCTAssertEqual(match, "First")
+    }
+
     func testAllTestsRunOnLinux() {
         verifyAllTestsRunOnLinux()
     }
@@ -173,7 +185,9 @@ extension SweepTests: LinuxTestable {
             ("testHTMLScanning", testHTMLScanning),
             ("testMarkdownScanning", testMarkdownScanning),
             ("testMultipleMatchers", testMultipleMatchers),
-            ("testDisallowingMultipleMatches", testDisallowingMultipleMatches)
+            ("testDisallowingMultipleMatches", testDisallowingMultipleMatches),
+            ("testScanningForSingleSubstring", testScanningForSingleSubstring),
+            ("testScanningForSingleSubstringWithMultipleIdentifiers", testScanningForSingleSubstringWithMultipleIdentifiers)
         ]
     }
 }
